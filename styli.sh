@@ -514,6 +514,11 @@ while :; do
     esac
 done
 
+# load plugins
+if [ -d "$THIS/plugins" ]; then
+    . "$THIS/plugins"/*.sh 2>/dev/null
+fi
+
 if [ -n "$DIR" ]; then
     select_random_wallpaper
 elif [ "$LINK" = "reddit" ] || [ -n "$SUB" ]; then

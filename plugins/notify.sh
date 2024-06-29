@@ -12,6 +12,7 @@
 if init notify_send; then
 	if ! NOTIFY_EXE=$(command -v notify-send 2>/dev/null); then
 		echo "required notify-send (from libnotify) not found. notify_send plugin will not work" | $NOTIFY_ERR
+		NOTIFY_EXE="echo"
 		return 1
 	fi
 	# shellcheck disable=SC2034

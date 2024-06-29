@@ -4,15 +4,11 @@
 # provides filters that can be applied to fetched wallpapers by executing an
 # imagemagick (required dependency for this) hook
 
-err1=0
-err2=0
-err3=0
+err=0
 
-IMCONV=$(command -v convert) || err1=$?
-IMCOMP=$(command -v composite) || err2=$?
-IMIDENT=$(command -v identify) || err3=$?
+MAGICK=$(command -v magick) || err=$?
 
-if [[ $(( err1 + err2 + err3 )) -gt 0 ]]; then
+if [[ $err -gt 0 ]]; then
 	echo "WARNING: imagemagick not found, filters not functional" | $NOTIFY_ERR
 fi
 
@@ -35,13 +31,15 @@ logo_overlay() {
 	cutmask="$tmpdir/cut.png"
 	invert="$tmpdir/invert.png"
 
-	$IMCONV "$WALLPAPER" "$origwp"  2>/dev/null # convert instead of copy to get the type right (png from jpg to do alpha stuff)
-	wpgeom="$($IMIDENT "$origwp" | awk '{ print $3 }')"
+	$MAGICK "$WALLPAPER" "$origwp" 2>/dev/null # convert instead of copy to get the type right (png from jpg to do alpha stuff)
+	wpgeom="$($MAGICK identify "$origwp" | awk '{ print $3 }')"
+	echo "wpgeom: $wpgeom" | outdbg
 
-	$IMCONV "$logo" -alpha extract -resize "$wpgeom" `#-define png:color-type=6` "$mask" 2>&1 | outdbg
-	$IMCOMP -compose CopyOpacity "$mask" "$origwp" "$cutmask" 2>&1 | outdbg
-	$IMCONV "$cutmask" -channel RGB -negate "$invert" 2>&1 | outdbg
-	$IMCONV "$origwp" "$invert" -gravity center -composite "$WALLPAPER" 2>&1 | outdbg
+	# shellcheck disable=SC2086
+	exdbg $MAGICK "$logo" -alpha extract -resize "$wpgeom" "$mask"
+	exdbg $MAGICK composite -compose CopyOpacity "$mask" "$origwp" "$cutmask"
+	exdbg $MAGICK "$cutmask" -channel RGB -negate "$invert"
+	exdbg $MAGICK "$origwp" "$invert" -gravity center -composite "$WALLPAPER"
 
 	[ -d "$tmpdir" ] && rm -rf "$tmpdir"
 	# set +x
